@@ -20,3 +20,25 @@ This project follows **Hexagonal Architecture** and **SOLID** principles:
 ## How to run locally
 1. Clone the repository: `git clone https://github.com/isw2-unileon/project-VehiclesRecomendationWeb.git`
 2. Run the backend: `go run cmd/api/main.go`
+
+
+## How to Run Locally
+
+### Prerequisites
+- Go 1.24+
+- PostgreSQL database
+
+### Commands
+1. **Clone the repository:**
+   `git clone https://github.com/isw2-unileon/project-VehiclesRecomendationWeb.git`
+2. **Download dependencies:**
+   `go mod tidy`
+3. **Compile the project:**
+   `go build -v ./...`
+4. **Run the server:**
+   `go run cmd/api/main.go`
+
+   http://localhost:8080/api/health
+
+   
+
