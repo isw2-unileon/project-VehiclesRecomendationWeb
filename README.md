@@ -42,3 +42,7 @@ This project follows **Hexagonal Architecture** and **SOLID** principles:
 
    
 
+
+login ( mejor buscar servicios de terceros)
+
+base de datos , simular una especie de api que se vaya actualizado de vez en cuando , 
