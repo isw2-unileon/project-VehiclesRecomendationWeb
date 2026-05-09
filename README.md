@@ -40,6 +40,17 @@ This project follows **Hexagonal Architecture** and **SOLID** principles:
 
    http://localhost:8080/api/health
 
+
+
+5. **Database Seeder (CSV to SQL)**
+This project includes a custom Go script to automate the database seeding process. The script reads the raw data from our `resources/Cars Datasets 2025.csv` file, processes the columns, and generates ready-to-use SQL `INSERT` statements.
+### Features
+* **Data Cleaning:** Automatically removes unnecessary text characters, currency symbols (`$`), and units (`cc`, `hp`, `km/h`) from numeric fields.
+* **Range Parsing:** Detects numerical ranges (e.g., `150-200`) and dynamically generates a random integer within that range to ensure valid SQL numeric types.
+* **SQL Injection Prevention:** Escapes single quotes in text fields to prevent syntax errors during insertion.
+
+`go run cmd/seeder/mainCSV.go > coches_seeder.sql`
+
    
 
 
@@ -48,3 +59,6 @@ login ( mejor buscar servicios de terceros)
 base de datos , simular una especie de api que se vaya actualizado de vez en cuando , 
 
 vemos si puede aceptar el pull request 
+
+
+
