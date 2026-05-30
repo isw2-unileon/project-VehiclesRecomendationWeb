@@ -1,4 +1,4 @@
-package services
+package simulator
 
 import (
 	"database/sql"
