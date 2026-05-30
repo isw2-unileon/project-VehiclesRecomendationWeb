@@ -5,8 +5,10 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/adapters/handlers"
 	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/adapters/repositories"
 	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/adapters/simulator"
+	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/core/services"
 )
 
 func main() {
@@ -18,6 +20,11 @@ func main() {
 	}
 	defer db.Close()
 
+	// repository → service → handler
+	carRepo := repositories.NewCarRepository(db)
+	carService := services.NewCarService(carRepo)
+	carHandler := handlers.NewCarHandler(carService)
+
 	sim := simulator.ApiSimulator{DB: db}
 	go sim.Start()
 
@@ -26,6 +33,10 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status": "ok", "message": "Vehicles Recommendation API is up and running!"}`))
 	})
+
+	http.HandleFunc("/api/cars/search", carHandler.SearchCars) // antes que /api/cars/
+	http.HandleFunc("/api/cars/", carHandler.GetCarByID)
+	http.HandleFunc("/api/cars", carHandler.GetAllCars)
 
 	port := ":8080"
 	fmt.Printf("Server starting on port %s...\n", port)
