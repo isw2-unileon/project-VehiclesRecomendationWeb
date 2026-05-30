@@ -12,6 +12,10 @@ Initial Setup, first time only !!
 git clone https://github.com/isw2-unileon/project-VehiclesRecomendationWeb.git
 cd project-VehiclesRecomendationWeb
 
+Create a `.env` file in the root folder of the project. This file is ignored by Git for security.
+Inside the file, paste your personal Groq API Key (get it for free at console.groq.com):
+GROQ_API_KEY=gsk_your_key_here
+
 # 2. Download Go dependencies
 go mod tidy
 
@@ -117,6 +121,17 @@ curl "http://localhost:8080/api/cars/search?min_price=10000&max_price=50000"
 # Combined filters
 curl "http://localhost:8080/api/cars/search?brand=BMW&fuel_type=Petrol&max_price=80000"
 
+# Get AI Car Recommendation (Requires .env configured)
+curl -X POST http://localhost:8080/api/recommend \
+  -H "Content-Type: application/json" \
+  -d '{
+    "preferences": "I am looking for a fast and reliable car for my family.",
+    "filters": {
+      "FuelType": "Petrol",
+      "MinSeats": 4
+    }
+  }'
+
 -------------------------------------------------------------------------------------
 
 Seeder (regenerate SQL from CSV)
@@ -127,3 +142,5 @@ go run cmd/seeder/mainCSV.go > cars_seeder.sql
 # Convert encoding and load into DB
 iconv -f UTF-16 -t UTF-8 cars_seeder.sql > cars_seeder_utf8.sql
 docker exec -i vehicles_db psql -U postgres -d cars < cars_seeder_utf8.sql
+
+
