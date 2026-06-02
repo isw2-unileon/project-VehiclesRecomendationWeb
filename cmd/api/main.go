@@ -5,6 +5,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/joho/godotenv"
+
+	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/adapters/groq"
 	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/adapters/handlers"
 	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/adapters/repositories"
 	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/adapters/simulator"
@@ -12,6 +15,10 @@ import (
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, relying on environment variables")
+	}
+
 	connStr := "host=localhost port=5432 user=postgres password=pass dbname=cars sslmode=disable"
 
 	db, err := repositories.InitDB(connStr)
@@ -25,9 +32,15 @@ func main() {
 	carService := services.NewCarService(carRepo)
 	carHandler := handlers.NewCarHandler(carService)
 
+	// components IA (Groq)
+	groqClient := groq.NewGroqClient()
+	aiService := services.NewRecommendationService(carRepo, groqClient)
+	aiHandler := handlers.NewRecommendationHandler(aiService)
+
 	sim := simulator.ApiSimulator{DB: db}
 	go sim.Start()
 
+	// check endpoint
 	http.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -37,6 +50,9 @@ func main() {
 	http.HandleFunc("/api/cars/search", carHandler.SearchCars) // antes que /api/cars/
 	http.HandleFunc("/api/cars/", carHandler.GetCarByID)
 	http.HandleFunc("/api/cars", carHandler.GetAllCars)
+
+	// AI recommendation endpoint
+	http.HandleFunc("/api/recommend", aiHandler.GetRecommendation)
 
 	port := ":8080"
 	fmt.Printf("Server starting on port %s...\n", port)
