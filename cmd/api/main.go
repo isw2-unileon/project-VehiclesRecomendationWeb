@@ -32,6 +32,14 @@ func main() {
 	carService := services.NewCarService(carRepo)
 	carHandler := handlers.NewCarHandler(carService)
 
+	// Auth
+	userRepo := repositories.NewUserRepository(db)
+	authService := services.NewAuthService(userRepo)
+	authHandler := handlers.NewAuthHandler(authService)
+
+	http.HandleFunc("/api/auth/register", authHandler.Register)
+	http.HandleFunc("/api/auth/login", authHandler.Login)
+
 	// components IA (Groq)
 	groqClient := groq.NewGroqClient()
 	aiService := services.NewRecommendationService(carRepo, groqClient)
