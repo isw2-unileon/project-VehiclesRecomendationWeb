@@ -7,14 +7,13 @@ import (
 	"strings"
 
 	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/core/ports"
-	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/core/services"
 )
 
 type CarHandler struct {
-	service *services.CarService
+	service ports.CarService
 }
 
-func NewCarHandler(service *services.CarService) *CarHandler {
+func NewCarHandler(service ports.CarService) *CarHandler {
 	return &CarHandler{service: service}
 }
 
