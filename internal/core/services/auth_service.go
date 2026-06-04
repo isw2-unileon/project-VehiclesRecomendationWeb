@@ -58,3 +58,7 @@ func (s *AuthService) Login(email, password string) (string, error) {
 
 	return token.SignedString([]byte(secret))
 }
+
+func (s *AuthService) GetUserByEmail(email string) (*domain.User, error) {
+	return s.userRepo.FindByEmail(email)
+}

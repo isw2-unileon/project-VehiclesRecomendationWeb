@@ -77,7 +77,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, _ := h.service.GetUserByEmail(req.Email)
+
 	respondWithJSON(w, http.StatusOK, map[string]string{
-		"token": token,
+		"token":    token,
+		"username": user.Username,
+		"email":    user.Email,
 	})
 }
