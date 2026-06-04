@@ -17,7 +17,7 @@ import (
 func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS,DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -56,6 +56,11 @@ func main() {
 	sim := &simulator.ApiSimulator{DB: db}
 	go sim.Start()
 
+	// Favorite module
+	favRepo := repositories.NewFavoriteRepository(db)
+	favService := services.NewFavoriteService(favRepo)
+	favHandler := handlers.NewFavoriteHandler(favService)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/health", enableCORS(func(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +82,9 @@ func main() {
 
 	mux.HandleFunc("/api/auth/register", enableCORS(authHandler.Register))
 	mux.HandleFunc("/api/auth/login", enableCORS(authHandler.Login))
+
+	mux.HandleFunc("/api/favorites", enableCORS(favHandler.HandleFavorites))
+	mux.HandleFunc("/api/cars/text-search", enableCORS(favHandler.TextSearch))
 
 	mux.Handle("/", http.FileServer(http.Dir("public/")))
 
