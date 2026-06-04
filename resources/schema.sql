@@ -1,4 +1,6 @@
-DROP TABLE IF EXISTS cars;
+DROP TABLE IF EXISTS user_favorites CASCADE;
+DROP TABLE IF EXISTS cars CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 CREATE TABLE cars (
     id                     SERIAL PRIMARY KEY,
     company                VARCHAR(100),
@@ -21,6 +23,12 @@ CREATE TABLE IF NOT EXISTS users (
     password   VARCHAR(255) NOT NULL,
     role       VARCHAR(20) DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_favorites (
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    car_id  INTEGER REFERENCES cars(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, car_id)
 );
 
 

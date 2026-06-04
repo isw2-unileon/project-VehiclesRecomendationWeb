@@ -52,9 +52,8 @@ func (g *GroqClient) GenerateRecommendation(userPreferences string, availableCar
 			car.ID, car.Brand, car.Model, car.FuelType, car.Price, car.HorsePower, car.Seats)
 	}
 
-	systemPrompt := "You are an expert car recommendation AI assistant. " +
-		"Analyze the user preferences and recommend the best options ONLY from the following available car catalog. " +
-		"Provide a friendly, structured response in English explaining WHY these options fit best.\n\n" +
+	systemPrompt := "You are a helpful car recommendation assistant. " +
+		"Analyze the following request along with its custom rules, and use ONLY the provided car catalog to make your decision.\n\n" +
 		"Available Catalog:\n" + carsContext
 
 	reqBody := groqRequest{
