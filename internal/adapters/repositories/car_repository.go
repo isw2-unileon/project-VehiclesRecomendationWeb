@@ -2,98 +2,112 @@ package repositories
 
 import (
 	"database/sql"
-	"fmt"
+	"strconv"
 
 	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/core/domain"
 	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/core/ports"
 )
 
-type CarRepositorySQL struct {
-	DB *sql.DB
+type carRepository struct {
+	db *sql.DB
 }
 
-func NewCarRepository(db *sql.DB) *CarRepositorySQL {
-	return &CarRepositorySQL{DB: db}
+func NewCarRepository(db *sql.DB) ports.CarRepository {
+	return &carRepository{db: db}
 }
 
-func (r *CarRepositorySQL) FindAll() ([]domain.Car, error) {
-	rows, err := r.DB.Query(`SELECT id, company, car_name, engine, capacity_cc,
-		power_hp, max_speed_kmh, acceleration_0_100_sec, price, fuel_type, seats, torque_nm
-		FROM cars`)
+const selectCars = `SELECT id, company, car_name, engine, capacity_cc,
+	power_hp, max_speed_kmh, acceleration_0_100_sec, price, fuel_type, seats, torque_nm FROM cars`
+
+func scanCar(rows *sql.Rows) (domain.Car, error) {
+	var c domain.Car
+	err := rows.Scan(
+		&c.ID, &c.Brand, &c.Model, &c.Engine, &c.CapacityCC,
+		&c.HorsePower, &c.TopSpeedKMH, &c.Acceleration, &c.Price,
+		&c.FuelType, &c.Seats, &c.TorqueNM,
+	)
+	return c, err
+}
+
+func (r *carRepository) FindAll() ([]domain.Car, error) {
+	rows, err := r.db.Query(selectCars)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	return scanCars(rows)
+
+	var cars []domain.Car
+	for rows.Next() {
+		c, err := scanCar(rows)
+		if err != nil {
+			return nil, err
+		}
+		cars = append(cars, c)
+	}
+	return cars, nil
 }
 
-func (r *CarRepositorySQL) FindByID(id int) (*domain.Car, error) {
-	row := r.DB.QueryRow(`SELECT id, company, car_name, engine, capacity_cc,
-		power_hp, max_speed_kmh, acceleration_0_100_sec, price, fuel_type, seats, torque_nm
-		FROM cars WHERE id = $1`, id)
-
-	car := &domain.Car{}
-	err := row.Scan(&car.ID, &car.Brand, &car.Model, &car.Engine, &car.CapacityCC,
-		&car.HorsePower, &car.TopSpeedKMH, &car.Acceleration, &car.Price,
-		&car.FuelType, &car.Seats, &car.TorqueNM)
+func (r *carRepository) FindByID(id int) (*domain.Car, error) {
+	query := selectCars + " WHERE id = $1"
+	rows, err := r.db.Query(query, id)
 	if err != nil {
 		return nil, err
 	}
-	return car, nil
+	defer rows.Close()
+	if rows.Next() {
+		c, err := scanCar(rows)
+		if err != nil {
+			return nil, err
+		}
+		return &c, nil
+	}
+	return nil, sql.ErrNoRows
 }
 
-func (r *CarRepositorySQL) FindByFilters(filters ports.CarFilters) ([]domain.Car, error) {
-	query := `SELECT id, company, car_name, engine, capacity_cc,
-		power_hp, max_speed_kmh, acceleration_0_100_sec, price, fuel_type, seats, torque_nm
-		FROM cars WHERE 1=1`
-	args := []interface{}{}
+func (r *carRepository) FindByFilters(filters ports.CarFilters) ([]domain.Car, error) {
+	query := selectCars + " WHERE 1=1"
+	var args []interface{}
 	i := 1
 
 	if filters.Brand != "" {
-		query += fmt.Sprintf(" AND LOWER(company) LIKE LOWER($%d)", i)
+		query += " AND company ILIKE $" + strconv.Itoa(i)
 		args = append(args, "%"+filters.Brand+"%")
 		i++
 	}
 	if filters.FuelType != "" {
-		query += fmt.Sprintf(" AND LOWER(fuel_type) = LOWER($%d)", i)
+		query += " AND fuel_type ILIKE $" + strconv.Itoa(i)
 		args = append(args, filters.FuelType)
 		i++
 	}
-	if filters.MinPrice > 0 {
-		query += fmt.Sprintf(" AND price >= $%d", i)
-		args = append(args, filters.MinPrice)
-		i++
-	}
 	if filters.MaxPrice > 0 {
-		query += fmt.Sprintf(" AND price <= $%d", i)
+		query += " AND price <= $" + strconv.Itoa(i)
 		args = append(args, filters.MaxPrice)
 		i++
 	}
 	if filters.MinSeats > 0 {
-		query += fmt.Sprintf(" AND seats >= $%d", i)
+		query += " AND seats >= $" + strconv.Itoa(i)
 		args = append(args, filters.MinSeats)
 		i++
 	}
+	if filters.MinHP > 0 {
+		query += " AND power_hp >= $" + strconv.Itoa(i)
+		args = append(args, filters.MinHP)
+		i++
+	}
 
-	rows, err := r.DB.Query(query, args...)
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	return scanCars(rows)
-}
 
-func scanCars(rows *sql.Rows) ([]domain.Car, error) {
 	var cars []domain.Car
 	for rows.Next() {
-		var car domain.Car
-		err := rows.Scan(&car.ID, &car.Brand, &car.Model, &car.Engine, &car.CapacityCC,
-			&car.HorsePower, &car.TopSpeedKMH, &car.Acceleration, &car.Price,
-			&car.FuelType, &car.Seats, &car.TorqueNM)
+		c, err := scanCar(rows)
 		if err != nil {
 			return nil, err
 		}
-		cars = append(cars, car)
+		cars = append(cars, c)
 	}
 	return cars, nil
 }

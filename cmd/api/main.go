@@ -14,6 +14,19 @@ import (
 	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/core/services"
 )
 
+func enableCORS(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next(w, r)
+	}
+}
+
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, relying on environment variables")
@@ -27,45 +40,50 @@ func main() {
 	}
 	defer db.Close()
 
-	// repository → service → handler
+	// Wiring
 	carRepo := repositories.NewCarRepository(db)
 	carService := services.NewCarService(carRepo)
 	carHandler := handlers.NewCarHandler(carService)
 
-	// Auth
 	userRepo := repositories.NewUserRepository(db)
 	authService := services.NewAuthService(userRepo)
 	authHandler := handlers.NewAuthHandler(authService)
 
-	http.HandleFunc("/api/auth/register", authHandler.Register)
-	http.HandleFunc("/api/auth/login", authHandler.Login)
-
-	// components IA (Groq)
 	groqClient := groq.NewGroqClient()
 	aiService := services.NewRecommendationService(carRepo, groqClient)
 	aiHandler := handlers.NewRecommendationHandler(aiService)
 
-	sim := simulator.ApiSimulator{DB: db}
+	sim := &simulator.ApiSimulator{DB: db}
 	go sim.Start()
 
-	// check endpoint
-	http.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/api/health", enableCORS(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status": "ok", "message": "Vehicles Recommendation API is up and running!"}`))
-	})
+	}))
 
-	http.HandleFunc("/api/cars/search", carHandler.SearchCars) // antes que /api/cars/
-	http.HandleFunc("/api/cars/", carHandler.GetCarByID)
-	http.HandleFunc("/api/cars", carHandler.GetAllCars)
+	mux.HandleFunc("/api/cars/", enableCORS(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/cars/search" {
+			carHandler.SearchCars(w, r)
+			return
+		}
+		carHandler.GetCarByID(w, r)
+	}))
+	mux.HandleFunc("/api/cars", enableCORS(carHandler.GetAllCars))
 
-	// AI recommendation endpoint
-	http.HandleFunc("/api/recommend", aiHandler.GetRecommendation)
+	mux.HandleFunc("/api/recommend", enableCORS(aiHandler.GetRecommendation))
+
+	mux.HandleFunc("/api/auth/register", enableCORS(authHandler.Register))
+	mux.HandleFunc("/api/auth/login", enableCORS(authHandler.Login))
+
+	mux.Handle("/", http.FileServer(http.Dir("public/")))
 
 	port := ":8080"
 	fmt.Printf("Server starting on port %s...\n", port)
 
-	if err := http.ListenAndServe(port, nil); err != nil {
+	if err := http.ListenAndServe(port, mux); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
 }
