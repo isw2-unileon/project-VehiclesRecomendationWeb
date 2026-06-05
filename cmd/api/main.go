@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/joho/godotenv"
 
@@ -32,7 +33,10 @@ func main() {
 		log.Println("No .env file found, relying on environment variables")
 	}
 
-	connStr := "host=localhost port=5432 user=postgres password=pass dbname=cars sslmode=disable"
+	connStr := os.Getenv("DATABASE_URL")
+	if connStr == "" {
+		connStr = "host=localhost port=5432 user=postgres password=pass dbname=cars sslmode=disable"
+	}
 
 	db, err := repositories.InitDB(connStr)
 	if err != nil {
@@ -88,7 +92,11 @@ func main() {
 
 	mux.Handle("/", http.FileServer(http.Dir("public/")))
 
-	port := ":8080"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	fmt.Printf("Server starting on port %s...\n", port)
 
 	if err := http.ListenAndServe(port, mux); err != nil {
