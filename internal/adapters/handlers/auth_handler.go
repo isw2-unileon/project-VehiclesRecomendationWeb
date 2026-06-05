@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/core/services"
+	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/core/ports"
 )
 
 type AuthHandler struct {
-	service *services.AuthService
+	service ports.AuthService
 }
 
-func NewAuthHandler(service *services.AuthService) *AuthHandler {
+func NewAuthHandler(service ports.AuthService) *AuthHandler {
 	return &AuthHandler{service: service}
 }
 
