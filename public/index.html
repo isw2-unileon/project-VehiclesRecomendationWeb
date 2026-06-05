@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vehicle Recommendation System</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <style>
         html,
         body {
@@ -135,463 +136,540 @@
             align-items: center;
             justify-content: center;
         }
-
-        #lock-screen.hidden {
-            display: none;
-        }
     </style>
 </head>
 
 <body class="bg-gray-100 text-gray-800 font-sans">
 
-    <header class="bg-blue-600 text-white shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <h1 class="text-lg font-bold">Vehicle Recommendation System</h1>
-                <span id="header-user-status" class="text-xs font-medium bg-white/20 px-3 py-1 rounded hidden">Logged
-                    In</span>
-                <span id="header-user-name" class="text-xs font-medium bg-white/20 px-3 py-1 rounded hidden"></span>
-            </div>
-            <div class="flex items-center gap-2">
-                <button id="fav-btn" class="fav-button header-fav" onclick="toggleFavorites()" style="display: none;">⭐
-                    My Favorites</button>
-                <button id="header-logout-btn" onclick="logout()"
-                    class="text-xs bg-white/30 hover:bg-white/40 px-3 py-1 rounded transition hidden">Log Out</button>
-            </div>
-        </div>
-    </header>
+    <div id="app">
 
-    <div id="lock-screen" class="">
-        <div class="bg-white p-8 rounded shadow-lg text-center w-96">
-            <p class="text-gray-700 font-bold text-lg mb-6">System Locked</p>
-            <p class="text-gray-500 text-sm mb-8">Please log in to access the vehicle database.</p>
-
-            <div id="login-box">
-                <h2 class="text-base font-bold border-b border-gray-200 pb-2 mb-3 text-left">Account Login</h2>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                <input id="log-email" type="email"
-                    class="w-full mb-3 p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
-                <label class="block text-xs font-medium text-gray-700 mb-1">Password</label>
-                <input id="log-password" type="password"
-                    class="w-full mb-3 p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
-                <button onclick="login()"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded mb-3 transition text-xs">Log
-                    In</button>
-                <div class="text-center text-xs border-t border-gray-200 pt-2">
-                    <span class="text-gray-500">Don't have an account?</span><br>
-                    <button onclick="switchMode('register')" class="text-blue-600 hover:underline mt-1">Create new
-                        account</button>
+        <!-- ── HEADER ── -->
+        <header class="bg-blue-600 text-white shadow-md">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-lg font-bold">Vehicle Recommendation System</h1>
+                    <span v-if="isLoggedIn" class="text-xs font-medium bg-white/20 px-3 py-1 rounded">Logged In</span>
+                    <span v-if="isLoggedIn" class="text-xs font-medium bg-white/20 px-3 py-1 rounded">{{ currentUsername
+                        }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button v-if="isLoggedIn" class="fav-button header-fav" @click="toggleFavorites">⭐ My
+                        Favorites</button>
+                    <button v-if="isLoggedIn" @click="logout"
+                        class="text-xs bg-white/30 hover:bg-white/40 px-3 py-1 rounded transition">Log Out</button>
                 </div>
             </div>
+        </header>
 
-            <div id="register-box" class="hidden">
-                <h2 class="text-base font-bold border-b border-gray-200 pb-2 mb-3 text-left">Register Account</h2>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Username</label>
-                <input id="reg-username" type="text"
-                    class="w-full mb-2 p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
-                <label class="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                <input id="reg-email" type="email"
-                    class="w-full mb-2 p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
-                <label class="block text-xs font-medium text-gray-700 mb-1">Password</label>
-                <input id="reg-password" type="password"
-                    class="w-full mb-3 p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
-                <button onclick="register()"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded mb-3 transition text-xs">Register</button>
-                <div class="text-center text-xs border-t border-gray-200 pt-2">
-                    <button onclick="switchMode('login')" class="text-blue-600 hover:underline">Back to Login</button>
-                </div>
-            </div>
-        </div>
-    </div>
+        <!-- ── LOCK SCREEN ── -->
+        <div v-if="!isLoggedIn" id="lock-screen">
+            <div class="bg-white p-8 rounded shadow-lg text-center w-96">
+                <p class="text-gray-700 font-bold text-lg mb-6">System Locked</p>
+                <p class="text-gray-500 text-sm mb-8">Please log in to access the vehicle database.</p>
 
-    <main class="max-w-7xl mx-auto px-4 py-4">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-            <div class="bg-white p-4 rounded border border-gray-300 shadow-sm flex flex-col flex-1 overflow-hidden">
-                <h2 class="text-base font-bold border-b border-gray-200 pb-2 mb-3 text-gray-800">AI Recommender (Llama
-                    3.1)</h2>
-                <p class="text-xs text-gray-600 mb-2">Describe your lifestyle and let our AI find the perfect match.</p>
-                <textarea id="ai-prompt" rows="3" placeholder="I need a reliable car for a family of four..."
-                    class="w-full mb-3 p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs resize-none"></textarea>
-                <button onclick="askAI()"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition text-xs mb-3">Generate
-                    Recommendation</button>
-                <div id="ai-response"
-                    class="flex-1 p-3 rounded border border-blue-100 bg-blue-50 hidden overflow-y-auto whitespace-pre-wrap text-xs text-gray-800">
-                </div>
-            </div>
-
-            <div class="bg-white p-4 rounded border border-gray-300 shadow-sm flex flex-col flex-1 overflow-hidden">
-                <h2 class="text-base font-bold border-b border-gray-200 pb-2 mb-3 text-gray-800">Database Search</h2>
-
-                <div class="space-y-2 mb-3">
-                    <div>
-                        <label class="text-xs font-medium text-gray-700 block mb-1">Brand</label>
-                        <input id="search-brand" type="text" placeholder="e.g. BMW"
-                            class="w-full p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
-                    </div>
-                    <div>
-                        <label class="text-xs font-medium text-gray-700 block mb-1">Fuel Type</label>
-                        <select id="search-fuel"
-                            class="w-full p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
-                            <option value="">-- All --</option>
-                            <option value="Gasoline">Gasoline</option>
-                            <option value="Diesel">Diesel</option>
-                            <option value="Electric">Electric</option>
-                            <option value="Hybrid">Hybrid</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-xs font-medium text-gray-700 block mb-1">Max Price (€)</label>
-                        <input id="search-price" type="number" placeholder="e.g. 50000"
-                            class="w-full p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
-                    </div>
-                    <div>
-                        <label class="text-xs font-medium text-gray-700 block mb-1">Min. Seats</label>
-                        <input id="search-seats" type="number" placeholder="Any" min="1" max="9"
-                            class="w-full p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
+                <!-- Login form -->
+                <div v-if="authMode === 'login'">
+                    <h2 class="text-base font-bold border-b border-gray-200 pb-2 mb-3 text-left">Account Login</h2>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                    <input v-model="logEmail" type="email"
+                        class="w-full mb-3 p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Password</label>
+                    <input v-model="logPassword" type="password"
+                        class="w-full mb-3 p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs"
+                        @keyup.enter="login">
+                    <button @click="login"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded mb-3 transition text-xs">Log
+                        In</button>
+                    <div class="text-center text-xs border-t border-gray-200 pt-2">
+                        <span class="text-gray-500">Don't have an account?</span><br>
+                        <button @click="authMode = 'register'" class="text-blue-600 hover:underline mt-1">Create new
+                            account</button>
                     </div>
                 </div>
 
-                <button onclick="manualSearch()"
-                    class="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium py-2 px-4 rounded transition text-xs mb-3">Search
-                    Database</button>
-
-                <div id="search-results" class="scrollable-results hidden">
+                <!-- Register form -->
+                <div v-if="authMode === 'register'">
+                    <h2 class="text-base font-bold border-b border-gray-200 pb-2 mb-3 text-left">Register Account</h2>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Username</label>
+                    <input v-model="regUsername" type="text"
+                        class="w-full mb-2 p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                    <input v-model="regEmail" type="email"
+                        class="w-full mb-2 p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Password</label>
+                    <input v-model="regPassword" type="password"
+                        class="w-full mb-3 p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs"
+                        @keyup.enter="register">
+                    <button @click="register"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded mb-3 transition text-xs">Register</button>
+                    <div class="text-center text-xs border-t border-gray-200 pt-2">
+                        <button @click="authMode = 'login'" class="text-blue-600 hover:underline">Back to Login</button>
+                    </div>
                 </div>
             </div>
-
         </div>
 
-        <div class="bg-white p-2 rounded border border-gray-300 shadow-sm mt-4">
-            <h2 class="text-xs font-bold border-b border-gray-200 pb-1 mb-1 text-gray-800">Model Text Search</h2>
-            <div class="flex gap-2">
-                <input id="text-search-input" type="text" placeholder="e.g., M5, Aventador, Corvette..."
-                    class="flex-1 p-1 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
-                <button onclick="textSearch()"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1 px-2 rounded transition text-xs">Find</button>
+        <!-- ── MAIN CONTENT ── -->
+        <main v-if="isLoggedIn" class="max-w-7xl mx-auto px-4 py-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                <!-- AI Recommender -->
+                <div class="bg-white p-4 rounded border border-gray-300 shadow-sm flex flex-col flex-1 overflow-hidden">
+                    <h2 class="text-base font-bold border-b border-gray-200 pb-2 mb-3 text-gray-800">AI Recommender
+                        (Llama 3.1)</h2>
+                    <p class="text-xs text-gray-600 mb-2">Describe your lifestyle and let our AI find the perfect match.
+                    </p>
+                    <textarea v-model="aiPrompt" rows="3" placeholder="I need a reliable car for a family of four..."
+                        class="w-full mb-3 p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs resize-none"></textarea>
+                    <button @click="askAI"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition text-xs mb-3">Generate
+                        Recommendation</button>
+                    <div v-if="aiResponse || aiLoading"
+                        class="flex-1 p-3 rounded border border-blue-100 bg-blue-50 overflow-y-auto whitespace-pre-wrap text-xs text-gray-800">
+                        <span v-if="aiLoading">Processing natural language and querying database...</span>
+                        <span v-else>{{ aiResponse }}</span>
+                    </div>
+                </div>
+
+                <!-- Database Search -->
+                <div class="bg-white p-4 rounded border border-gray-300 shadow-sm flex flex-col flex-1 overflow-hidden">
+                    <h2 class="text-base font-bold border-b border-gray-200 pb-2 mb-3 text-gray-800">Database Search
+                    </h2>
+
+                    <div class="space-y-2 mb-3">
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1">Brand</label>
+                            <input v-model="searchBrand" type="text" placeholder="e.g. BMW"
+                                class="w-full p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1">Fuel Type</label>
+                            <select v-model="searchFuel"
+                                class="w-full p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
+                                <option value="">-- All --</option>
+                                <option value="Gasoline">Gasoline</option>
+                                <option value="Diesel">Diesel</option>
+                                <option value="Electric">Electric</option>
+                                <option value="Hybrid">Hybrid</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1">Max Price (€)</label>
+                            <input v-model="searchPrice" type="number" placeholder="e.g. 50000"
+                                class="w-full p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1">Min. Seats</label>
+                            <input v-model="searchSeats" type="number" placeholder="Any" min="1" max="9"
+                                class="w-full p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
+                        </div>
+                    </div>
+
+                    <button @click="manualSearch"
+                        class="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium py-2 px-4 rounded transition text-xs mb-3">Search
+                        Database</button>
+
+                    <div v-if="searchLoading || searchDone" class="scrollable-results">
+                        <div v-if="searchLoading" class="text-center py-4">Searching database...</div>
+                        <template v-else>
+                            <p v-if="searchResults.length === 0" class="text-center text-red-500 font-medium py-4">
+                                0 records found matching your criteria.
+                            </p>
+                            <template v-else>
+                                <p class="font-bold border-b pb-2 mb-3 text-gray-800 text-xs">
+                                    Results: {{ searchResults.length }} vehicles found
+                                </p>
+                                <div class="space-y-2">
+                                    <div v-for="car in searchResults" :key="car.id"
+                                        class="bg-gray-50 border border-gray-200 rounded p-2 text-xs">
+                                        <div class="flex justify-between items-start mb-1">
+                                            <div>
+                                                <h3 class="font-bold text-gray-900">
+                                                    {{ carBrand(car) }} <span class="text-blue-600">{{ carModel(car)
+                                                        }}</span>
+                                                </h3>
+                                                <p class="text-gray-500">
+                                                    Fuel: {{ car.fuel_type || car.FuelType || '-' }} | Seats: {{
+                                                    car.seats || car.Seats || '-' }}
+                                                </p>
+                                            </div>
+                                            <div class="flex gap-1">
+                                                <a :href="imageLink(car)" target="_blank"
+                                                    class="bg-gray-200 hover:bg-gray-300 py-1 px-1.5 rounded">Photo</a>
+                                                <button @click="addFavorite(car.id)"
+                                                    class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold py-1 px-1.5 rounded">Save</button>
+                                            </div>
+                                        </div>
+                                        <div class="font-bold text-green-700">{{ formatPrice(car) }}</div>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
+                    </div>
+                </div>
+
             </div>
-            <div id="text-search-results" class="scrollable-results hidden mt-2">
+
+            <!-- Text Search -->
+            <div class="bg-white p-2 rounded border border-gray-300 shadow-sm mt-4">
+                <h2 class="text-xs font-bold border-b border-gray-200 pb-1 mb-1 text-gray-800">Model Text Search</h2>
+                <div class="flex gap-2">
+                    <input v-model="textSearchInput" type="text" placeholder="e.g., M5, Aventador, Corvette..."
+                        class="flex-1 p-1 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs"
+                        @keyup.enter="textSearch">
+                    <button @click="textSearch"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1 px-2 rounded transition text-xs">Find</button>
+                </div>
+
+                <div v-if="textSearchLoading || textSearchDone" class="scrollable-results mt-2">
+                    <div v-if="textSearchLoading" class="text-center py-4">Searching...</div>
+                    <template v-else>
+                        <p v-if="textSearchResults.length === 0" class="text-center text-red-500 py-4">
+                            No matching registry records found for that text.
+                        </p>
+                        <div v-else class="space-y-2">
+                            <div v-for="car in textSearchResults" :key="car.id"
+                                class="bg-gray-50 border border-gray-200 rounded p-2 text-xs">
+                                <div class="flex justify-between items-start mb-1">
+                                    <div>
+                                        <h3 class="font-bold text-gray-900">
+                                            {{ carBrand(car) }} <span class="text-blue-600">{{ carModel(car) }}</span>
+                                        </h3>
+                                        <p class="text-gray-500">
+                                            Engine: {{ car.engine || car.Engine || '-' }} | HP: {{ car.power_hp ||
+                                            car.HorsePower || '-' }}
+                                        </p>
+                                        <p class="text-gray-500">
+                                            Fuel: {{ car.fuel_type || car.FuelType || '-' }} | Seats: {{ car.seats ||
+                                            car.Seats || '-' }}
+                                        </p>
+                                    </div>
+                                    <div class="flex gap-1">
+                                        <a :href="imageLink(car)" target="_blank"
+                                            class="bg-gray-200 hover:bg-gray-300 py-1 px-1.5 rounded">Photo</a>
+                                        <button @click="addFavorite(car.id)"
+                                            class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold py-1 px-1.5 rounded">Save</button>
+                                    </div>
+                                </div>
+                                <div class="font-bold text-green-700">{{ formatPrice(car) }}</div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </main>
+
+        <!-- ── FAVORITES MODAL ── -->
+        <div v-if="isLoggedIn" :class="['favorites-modal', { open: favoritesOpen }]">
+            <div class="favorites-header">
+                <h3 class="text-sm font-bold">My Saved Favorites</h3>
+                <button @click="toggleFavorites" class="text-gray-500 hover:text-gray-700 font-bold text-lg">✕</button>
+            </div>
+            <div class="favorites-content">
+                <p v-if="favorites.length === 0" class="text-gray-500 text-xs">No favorites saved yet.</p>
+                <div v-for="car in favorites" :key="car.id"
+                    class="bg-gray-50 border border-gray-200 rounded p-2 text-xs mb-2 hover:border-yellow-400 transition">
+                    <div class="flex justify-between items-start mb-1">
+                        <div>
+                            <h3 class="font-bold text-gray-900">
+                                {{ carBrand(car) }} <span class="text-blue-600">{{ carModel(car) }}</span>
+                            </h3>
+                            <p class="text-gray-500">
+                                Fuel: {{ car.fuel_type || car.FuelType || '-' }} | Seats: {{ car.seats || car.Seats ||
+                                '-' }}
+                            </p>
+                        </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <a :href="imageLink(car)" target="_blank"
+                                class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-1 px-2 rounded">Photo</a>
+                            <button @click="removeFavorite(car.id)"
+                                class="bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold py-1 px-2 rounded">Remove</button>
+                        </div>
+                    </div>
+                    <div class="font-bold text-green-700">{{ formatPrice(car) }}</div>
+                </div>
             </div>
         </div>
-    </main>
 
-    <div id="favorites-modal" class="favorites-modal">
-        <div class="favorites-header">
-            <h3 class="text-sm font-bold">My Saved Favorites</h3>
-            <button onclick="toggleFavorites()" class="text-gray-500 hover:text-gray-700 font-bold text-lg">✕</button>
-        </div>
-        <div id="favorites-section" class="favorites-content">
-            <p class="text-gray-500 text-xs">No favorites saved yet.</p>
-        </div>
-    </div>
-
+    </div><!-- #app -->
 
     <script>
-        let token = localStorage.getItem("token") || "";
-        let currentUsername = localStorage.getItem("username") || "";
+        const { createApp } = Vue;
 
-        window.onload = () => {
-            if (token) {
-                toggleUI(true);
-                loadFavorites();
-            } else {
-                toggleUI(false);
-            }
-        };
+        createApp({
+            data() {
+                return {
+                    // Auth state
+                    token: localStorage.getItem('token') || '',
+                    currentUsername: localStorage.getItem('username') || '',
+                    authMode: 'login', // 'login' | 'register'
 
-        function switchMode(mode) {
-            if (mode === 'register') {
-                document.getElementById('login-box').classList.add('hidden');
-                document.getElementById('register-box').classList.remove('hidden');
-            } else {
-                document.getElementById('register-box').classList.add('hidden');
-                document.getElementById('login-box').classList.remove('hidden');
-            }
-        }
+                    // Login form
+                    logEmail: '',
+                    logPassword: '',
 
-        function toggleUI(isLoggedIn) {
-            if (isLoggedIn) {
-                document.getElementById("lock-screen").classList.add("hidden");
-                document.getElementById("fav-btn").style.display = "flex";
-                document.getElementById("header-logout-btn").classList.remove("hidden");
-                document.getElementById("header-user-status").classList.remove("hidden");
-                document.getElementById("header-user-name").classList.remove("hidden");
-                document.getElementById("header-user-name").innerText = currentUsername;
-            } else {
-                document.getElementById("lock-screen").classList.remove("hidden");
-                document.getElementById("search-results").classList.add("hidden");
-                document.getElementById("text-search-results").classList.add("hidden");
-                document.getElementById("ai-response").classList.add("hidden");
-                document.getElementById("favorites-modal").classList.remove("open");
-                document.getElementById("fav-btn").style.display = "none";
-                document.getElementById("header-logout-btn").classList.add("hidden");
-                document.getElementById("header-user-status").classList.add("hidden");
-                document.getElementById("header-user-name").classList.add("hidden");
+                    // Register form
+                    regUsername: '',
+                    regEmail: '',
+                    regPassword: '',
 
-                document.getElementById("search-brand").value = "";
-                document.getElementById("search-fuel").value = "";
-                document.getElementById("search-price").value = "";
-                document.getElementById("search-seats").value = "";
-                if (document.getElementById("text-search-input")) document.getElementById("text-search-input").value = "";
-            }
-        }
+                    // Database search
+                    searchBrand: '',
+                    searchFuel: '',
+                    searchPrice: '',
+                    searchSeats: '',
+                    searchResults: [],
+                    searchLoading: false,
+                    searchDone: false,
 
-        function toggleFavorites() {
-            const modal = document.getElementById("favorites-modal");
-            modal.classList.toggle("open");
-        }
+                    // AI Recommender
+                    aiPrompt: '',
+                    aiResponse: '',
+                    aiLoading: false,
 
-        async function register() {
-            const username = document.getElementById("reg-username").value;
-            const email = document.getElementById("reg-email").value;
-            const password = document.getElementById("reg-password").value;
+                    // Text search
+                    textSearchInput: '',
+                    textSearchResults: [],
+                    textSearchLoading: false,
+                    textSearchDone: false,
 
-            if (!username || !email || !password) return alert("Please fill in all fields.");
+                    // Favorites
+                    favoritesOpen: false,
+                    favorites: [],
+                };
+            },
 
-            try {
-                const res = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, email, password })
-                });
-                if (res.ok) {
-                    alert("Account registered! Please log in.");
-                    switchMode('login');
-                    document.getElementById("log-email").value = email;
-                } else alert("Registration failed. Email or username might already exist.");
-            } catch (error) { alert("Server connection error."); }
-        }
+            computed: {
+                isLoggedIn() {
+                    return !!this.token;
+                },
+            },
 
-        async function login() {
-            const email = document.getElementById("log-email").value;
-            const password = document.getElementById("log-password").value;
+            mounted() {
+                if (this.isLoggedIn) {
+                    this.loadFavorites();
+                }
+            },
 
-            if (!email || !password) return alert("Please enter email and password.");
+            methods: {
+                // ── Helpers ──────────────────────────────────────────────
+                carBrand(car) {
+                    return car.brand || car.company || '-';
+                },
+                carModel(car) {
+                    return car.model || car.car_name || '-';
+                },
+                imageLink(car) {
+                    const q = encodeURIComponent(`${this.carBrand(car)} ${this.carModel(car)} car`);
+                    return `https://www.google.com/search?tbm=isch&q=${q}`;
+                },
+                formatPrice(car) {
+                    const p = car.price || car.Price;
+                    return p ? '€' + Number(p).toLocaleString() : 'Price upon request';
+                },
 
-            try {
-                const res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    token = data.token;
-                    currentUsername = data.username || email.split('@')[0];
-                    localStorage.setItem("token", token);
-                    localStorage.setItem("username", currentUsername);
-                    toggleUI(true);
-                    loadFavorites();
-                } else alert("Invalid credentials.");
-            } catch (error) { alert("Server connection error."); }
-        }
-
-        function logout() {
-            token = "";
-            currentUsername = "";
-            localStorage.removeItem("token");
-            localStorage.removeItem("username");
-            toggleUI(false);
-        }
-
-        async function manualSearch() {
-            const brand = document.getElementById("search-brand").value;
-            const fuel = document.getElementById("search-fuel").value;
-            const price = document.getElementById("search-price").value;
-            const seats = document.getElementById("search-seats").value;
-
-            const resultsBox = document.getElementById("search-results");
-            resultsBox.classList.remove("hidden");
-            resultsBox.innerHTML = "<div class='text-center py-4'>Searching database...</div>";
-
-            let queryParams = new URLSearchParams();
-            if (brand) queryParams.append("brand", brand);
-            if (fuel) queryParams.append("fuel_type", fuel);
-            if (price) queryParams.append("max_price", price);
-            if (seats) queryParams.append("min_seats", seats);
-
-            try {
-                const res = await fetch(`/api/cars/search?${queryParams.toString()}`, { method: 'GET' });
-
-                if (res.ok) {
-                    const cars = await res.json();
-                    if (!cars || cars.length === 0) {
-                        resultsBox.innerHTML = "<div class='text-center text-red-500 font-medium py-4'>0 records found matching your criteria.</div>";
-                        return;
+                // ── Auth ─────────────────────────────────────────────────
+                async login() {
+                    if (!this.logEmail || !this.logPassword) {
+                        return alert('Please enter email and password.');
                     }
-
-                    let html = `<p class="font-bold border-b pb-2 mb-3 text-gray-800 text-xs">Results: ${cars.length} vehicles found</p><div class="space-y-2">`;
-                    cars.forEach(car => {
-                        const brandName = car.brand || car.company || '-';
-                        const modelName = car.model || car.car_name || '-';
-                        const searchImgQuery = encodeURIComponent(`${brandName} ${modelName} car`);
-                        const imageLink = `https://www.google.com/search?tbm=isch&q=${searchImgQuery}`;
-
-                        html += `
-                        <div class="bg-gray-50 border border-gray-200 rounded p-2 text-xs">
-                            <div class="flex justify-between items-start mb-1">
-                                <div>
-                                    <h3 class="font-bold text-gray-900">${brandName} <span class="text-blue-600">${modelName}</span></h3>
-                                    <p class="text-gray-500">Fuel: ${car.fuel_type || car.FuelType || '-'} | Seats: ${car.seats || car.Seats || '-'}</p>
-                                </div>
-                                <div class="flex gap-1">
-                                    <a href="${imageLink}" target="_blank" class="bg-gray-200 hover:bg-gray-300 py-1 px-1.5 rounded">Photo</a>
-                                    <button onclick="addFavorite(${car.id})" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold py-1 px-1.5 rounded">Save</button>
-                                </div>
-                            </div>
-                            <div class="font-bold text-green-700">${car.price || car.Price ? '€' + (car.price || car.Price).toLocaleString() : 'Price upon request'}</div>
-                        </div>`;
-                    });
-                    html += `</div>`;
-                    resultsBox.innerHTML = html;
-                } else {
-                    resultsBox.innerHTML = "<div class='text-center text-red-500 py-4'>Backend Error: Could not retrieve data.</div>";
-                }
-            } catch (e) {
-                resultsBox.innerHTML = "<div class='text-center text-red-500 py-4'>Connection Error: Failed to reach the backend.</div>";
-            }
-        }
-
-        async function askAI() {
-            const prompt = document.getElementById("ai-prompt").value;
-            if (!prompt) return alert("Please provide input for the AI.");
-
-            const responseBox = document.getElementById("ai-response");
-            responseBox.classList.remove("hidden");
-            responseBox.innerText = "Processing natural language and querying database...";
-
-            try {
-                const res = await fetch('/api/recommend', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ preferences: prompt })
-                });
-                const data = await res.json();
-                responseBox.innerText = data.recommendation || "System Error: " + data.error;
-            } catch (e) {
-                responseBox.innerText = "Connection Error: Failed to reach the backend.";
-            }
-        }
-
-        async function textSearch() {
-            const query = document.getElementById("text-search-input").value;
-            if (!query) return alert("Please paste or type a car model first.");
-
-            const resultsBox = document.getElementById("text-search-results");
-            resultsBox.classList.remove("hidden");
-            resultsBox.innerHTML = "<div class='text-center py-4'>Searching...</div>";
-
-            try {
-                const res = await fetch(`/api/cars/text-search?q=${encodeURIComponent(query)}`, { method: 'GET' });
-                if (res.ok) {
-                    const cars = await res.json();
-                    if (!cars || cars.length === 0) {
-                        resultsBox.innerHTML = "<div class='text-center text-red-500 py-4'>No matching registry records found for that text.</div>";
-                        return;
+                    try {
+                        const res = await fetch('/api/auth/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: this.logEmail, password: this.logPassword }),
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.token = data.token;
+                            this.currentUsername = data.username || this.logEmail.split('@')[0];
+                            localStorage.setItem('token', this.token);
+                            localStorage.setItem('username', this.currentUsername);
+                            this.loadFavorites();
+                        } else {
+                            alert('Invalid credentials.');
+                        }
+                    } catch {
+                        alert('Server connection error.');
                     }
+                },
 
-                    let html = `<div class="space-y-2">`;
-                    cars.forEach(car => {
-                        const brandName = car.brand || car.company || '-';
-                        const modelName = car.model || car.car_name || '-';
-                        const searchImgQuery = encodeURIComponent(`${brandName} ${modelName} car`);
-
-                        html += `
-                        <div class="bg-gray-50 border border-gray-200 rounded p-2 text-xs">
-                            <div class="flex justify-between items-start mb-1">
-                                <div>
-                                    <h3 class="font-bold text-gray-900">${brandName} <span class="text-blue-600">${modelName}</span></h3>
-                                    <p class="text-gray-500">Engine: ${car.engine || car.Engine || '-'} | HP: ${car.power_hp || car.HorsePower || '-'}</p>
-                                    <p class="text-gray-500">Fuel: ${car.fuel_type || car.FuelType || '-'} | Seats: ${car.seats || car.Seats || '-'}</p>
-                                </div>
-                                <div class="flex gap-1">
-                                    <a href="https://www.google.com/search?tbm=isch&q=${searchImgQuery}" target="_blank" class="bg-gray-200 hover:bg-gray-300 py-1 px-1.5 rounded">Photo</a>
-                                    <button onclick="addFavorite(${car.id})" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold py-1 px-1.5 rounded">Save</button>
-                                </div>
-                            </div>
-                            <div class="font-bold text-green-700">${car.price || car.Price ? '€' + (car.price || car.Price).toLocaleString() : 'Price upon request'}</div>
-                        </div>`;
-                    });
-                    html += `</div>`;
-                    resultsBox.innerHTML = html;
-                } else {
-                    resultsBox.innerHTML = "<div class='text-center text-red-500 py-4'>Backend processing error.</div>";
-                }
-            } catch (e) {
-                resultsBox.innerHTML = "<div class='text-center text-red-500 py-4'>Connection lost.</div>";
-            }
-        }
-
-        async function loadFavorites() {
-            const section = document.getElementById("favorites-section");
-            try {
-                const res = await fetch('/api/favorites', {
-                    method: 'GET',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) {
-                    const cars = await res.json();
-                    if (!cars || cars.length === 0) {
-                        section.innerHTML = "<p class='text-gray-500 text-xs'>No favorites saved yet.</p>";
-                        return;
+                async register() {
+                    if (!this.regUsername || !this.regEmail || !this.regPassword) {
+                        return alert('Please fill in all fields.');
                     }
-                    let html = "";
-                    cars.forEach(car => {
-                        const brandName = car.brand || car.company || '-';
-                        const modelName = car.model || car.car_name || '-';
-                        const searchImgQuery = encodeURIComponent(`${brandName} ${modelName} car`);
-                        const imageLink = `https://www.google.com/search?tbm=isch&q=${searchImgQuery}`;
-                        html += `
-                        <div class="bg-gray-50 border border-gray-200 rounded p-2 text-xs mb-2 hover:border-yellow-400 transition">
-                            <div class="flex justify-between items-start mb-1">
-                                <div>
-                                    <h3 class="font-bold text-gray-900">${brandName} <span class="text-blue-600">${modelName}</span></h3>
-                                    <p class="text-gray-500">Fuel: ${car.fuel_type || car.FuelType || '-'} | Seats: ${car.seats || car.Seats || '-'}</p>
-                                </div>
-                                <div class="flex flex-col items-end gap-2">
-                                    <a href="${imageLink}" target="_blank" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-1 px-2 rounded">Photo</a>
-                                    <button onclick="removeFavorite(${car.id})" class="bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold py-1 px-2 rounded">Remove</button>
-                                </div>
-                            </div>
-                            <div class="font-bold text-green-700">${car.price || car.Price ? '€' + (car.price || car.Price).toLocaleString() : 'Price upon request'}</div>
-                        </div>`;
-                    });
-                    section.innerHTML = html;
-                }
-            } catch (e) {
-                section.innerHTML = "<p class='text-red-500 text-xs'>Failed to sync favorites with backend.</p>";
-            }
-        }
+                    try {
+                        const res = await fetch('/api/auth/register', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                username: this.regUsername,
+                                email: this.regEmail,
+                                password: this.regPassword,
+                            }),
+                        });
+                        if (res.ok) {
+                            alert('Account registered! Please log in.');
+                            this.logEmail = this.regEmail;
+                            this.authMode = 'login';
+                        } else {
+                            alert('Registration failed. Email or username might already exist.');
+                        }
+                    } catch {
+                        alert('Server connection error.');
+                    }
+                },
 
-        async function addFavorite(carId) {
-            try {
-                const res = await fetch('/api/favorites', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                    body: JSON.stringify({ car_id: carId })
-                });
-                if (res.ok) {
-                    alert("Added to favorites successfully!");
-                    loadFavorites();
-                } else {
-                    alert("Could not append favorite. Session expired or already exist.");
-                }
-            } catch (e) { alert("Error connecting to favorites system."); }
-        }
+                logout() {
+                    this.token = '';
+                    this.currentUsername = '';
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('username');
+                    // Reset UI state
+                    this.searchResults = [];
+                    this.searchDone = false;
+                    this.textSearchResults = [];
+                    this.textSearchDone = false;
+                    this.aiResponse = '';
+                    this.aiLoading = false;
+                    this.favoritesOpen = false;
+                    this.searchBrand = '';
+                    this.searchFuel = '';
+                    this.searchPrice = '';
+                    this.searchSeats = '';
+                    this.textSearchInput = '';
+                },
 
-        async function removeFavorite(carId) {
-            try {
-                const res = await fetch(`/api/favorites?car_id=${carId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) {
-                    loadFavorites();
-                }
-            } catch (e) { alert("Error deleting target vehicle."); }
-        }
+                // ── Favorites ─────────────────────────────────────────────
+                toggleFavorites() {
+                    this.favoritesOpen = !this.favoritesOpen;
+                },
+
+                async loadFavorites() {
+                    try {
+                        const res = await fetch('/api/favorites', {
+                            method: 'GET',
+                            headers: { Authorization: 'Bearer ' + this.token },
+                        });
+                        if (res.ok) {
+                            this.favorites = (await res.json()) || [];
+                        }
+                    } catch {
+                        // silent — shown inline if needed
+                    }
+                },
+
+                async addFavorite(carId) {
+                    try {
+                        const res = await fetch('/api/favorites', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: 'Bearer ' + this.token,
+                            },
+                            body: JSON.stringify({ car_id: carId }),
+                        });
+                        if (res.ok) {
+                            alert('Added to favorites successfully!');
+                            this.loadFavorites();
+                        } else {
+                            alert('Could not append favorite. Session expired or already exist.');
+                        }
+                    } catch {
+                        alert('Error connecting to favorites system.');
+                    }
+                },
+
+                async removeFavorite(carId) {
+                    try {
+                        const res = await fetch(`/api/favorites?car_id=${carId}`, {
+                            method: 'DELETE',
+                            headers: { Authorization: 'Bearer ' + this.token },
+                        });
+                        if (res.ok) {
+                            this.loadFavorites();
+                        }
+                    } catch {
+                        alert('Error deleting target vehicle.');
+                    }
+                },
+
+                // ── Search ────────────────────────────────────────────────
+                async manualSearch() {
+                    this.searchLoading = true;
+                    this.searchDone = false;
+                    this.searchResults = [];
+
+                    const params = new URLSearchParams();
+                    if (this.searchBrand) params.append('brand', this.searchBrand);
+                    if (this.searchFuel) params.append('fuel_type', this.searchFuel);
+                    if (this.searchPrice) params.append('max_price', this.searchPrice);
+                    if (this.searchSeats) params.append('min_seats', this.searchSeats);
+
+                    try {
+                        const res = await fetch(`/api/cars/search?${params.toString()}`, { method: 'GET' });
+                        if (res.ok) {
+                            this.searchResults = (await res.json()) || [];
+                        } else {
+                            alert('Backend Error: Could not retrieve data.');
+                        }
+                    } catch {
+                        alert('Connection Error: Failed to reach the backend.');
+                    } finally {
+                        this.searchLoading = false;
+                        this.searchDone = true;
+                    }
+                },
+
+                async askAI() {
+                    if (!this.aiPrompt) return alert('Please provide input for the AI.');
+                    this.aiLoading = true;
+                    this.aiResponse = '';
+                    try {
+                        const res = await fetch('/api/recommend', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: 'Bearer ' + this.token,
+                            },
+                            body: JSON.stringify({ preferences: this.aiPrompt }),
+                        });
+                        const data = await res.json();
+                        this.aiResponse = data.recommendation || 'System Error: ' + data.error;
+                    } catch {
+                        this.aiResponse = 'Connection Error: Failed to reach the backend.';
+                    } finally {
+                        this.aiLoading = false;
+                    }
+                },
+
+                async textSearch() {
+                    if (!this.textSearchInput) return alert('Please paste or type a car model first.');
+                    this.textSearchLoading = true;
+                    this.textSearchDone = false;
+                    this.textSearchResults = [];
+
+                    try {
+                        const res = await fetch(
+                            `/api/cars/text-search?q=${encodeURIComponent(this.textSearchInput)}`,
+                            { method: 'GET' }
+                        );
+                        if (res.ok) {
+                            this.textSearchResults = (await res.json()) || [];
+                        } else {
+                            alert('Backend processing error.');
+                        }
+                    } catch {
+                        alert('Connection lost.');
+                    } finally {
+                        this.textSearchLoading = false;
+                        this.textSearchDone = true;
+                    }
+                },
+            },
+        }).mount('#app');
     </script>
+
 </body>
 
 </html>
