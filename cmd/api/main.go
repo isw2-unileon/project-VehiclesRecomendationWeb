@@ -99,7 +99,7 @@ func main() {
 
 	fmt.Printf("Server starting on port %s...\n", port)
 
-	if err := http.ListenAndServe(port, mux); err != nil {
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
 }
