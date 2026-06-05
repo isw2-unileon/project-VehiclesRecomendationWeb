@@ -5,14 +5,13 @@ import (
 	"net/http"
 
 	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/core/ports"
-	"github.com/isw2-unileon/project-VehiclesRecomendationWeb/internal/core/services"
 )
 
 type RecommendationHandler struct {
-	service *services.RecommendationService
+	service ports.RecommendationService
 }
 
-func NewRecommendationHandler(service *services.RecommendationService) *RecommendationHandler {
+func NewRecommendationHandler(service ports.RecommendationService) *RecommendationHandler {
 	return &RecommendationHandler{service: service}
 }
 
