@@ -137,3 +137,29 @@ func TestAuthHandler_Login_MethodNotAllowed(t *testing.T) {
 
 	assert.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 }
+
+func TestAuthHandler_Register_InvalidBody(t *testing.T) {
+	mockSvc := new(mocks.MockAuthService)
+
+	handler := handlers.NewAuthHandler(mockSvc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/register", bytes.NewBufferString("invalid json"))
+	rec := httptest.NewRecorder()
+
+	handler.Register(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+func TestAuthHandler_Login_InvalidBody(t *testing.T) {
+	mockSvc := new(mocks.MockAuthService)
+
+	handler := handlers.NewAuthHandler(mockSvc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewBufferString("invalid json"))
+	rec := httptest.NewRecorder()
+
+	handler.Login(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}
