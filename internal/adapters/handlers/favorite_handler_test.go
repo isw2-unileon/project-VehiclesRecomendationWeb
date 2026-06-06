@@ -149,3 +149,64 @@ func TestFavoriteHandler_TextSearch_EmptyQuery(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rec.Code)
 }
+
+func TestFavoriteHandler_AddFavorite_InvalidBody(t *testing.T) {
+	mockSvc := new(mocks.MockFavoriteService)
+
+	handler := handlers.NewFavoriteHandler(mockSvc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/favorites", bytes.NewBufferString("invalid json"))
+	req.Header.Set("Authorization", validToken)
+	rec := httptest.NewRecorder()
+
+	handler.HandleFavorites(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+func TestFavoriteHandler_RemoveFavorite_Error(t *testing.T) {
+	mockSvc := new(mocks.MockFavoriteService)
+
+	mockSvc.On("RemoveFavorite", 1, 10).Return(errors.New("database error"))
+
+	handler := handlers.NewFavoriteHandler(mockSvc)
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/favorites?car_id=10", nil)
+	req.Header.Set("Authorization", validToken)
+	rec := httptest.NewRecorder()
+
+	handler.HandleFavorites(rec, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	mockSvc.AssertExpectations(t)
+}
+
+func TestFavoriteHandler_InvalidToken(t *testing.T) {
+	mockSvc := new(mocks.MockFavoriteService)
+
+	handler := handlers.NewFavoriteHandler(mockSvc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/favorites", nil)
+	req.Header.Set("Authorization", "Bearer invalid.token")
+	rec := httptest.NewRecorder()
+
+	handler.HandleFavorites(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+func TestFavoriteHandler_TextSearch_Error(t *testing.T) {
+	mockSvc := new(mocks.MockFavoriteService)
+
+	mockSvc.On("SearchByText", "toyota").Return([]domain.Car{}, errors.New("database error"))
+
+	handler := handlers.NewFavoriteHandler(mockSvc)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/favorites/search?q=toyota", nil)
+	rec := httptest.NewRecorder()
+
+	handler.TextSearch(rec, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	mockSvc.AssertExpectations(t)
+}
