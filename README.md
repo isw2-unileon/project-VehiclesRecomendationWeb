@@ -1,61 +1,154 @@
 # Vehicles Recommendation Web
-
-A full-stack web application with a smart vehicle recommendation engine powered by Artificial Intelligence (Groq Llama 3.1), an advanced manual search engine. 
-
-## Technologies Used
-- **Backend:** Go 1.24 (Golang)
-- **Architecture:** Strict Hexagonal Architecture & SOLID principles
-- **Database:** PostgreSQL (Containerized with Docker)
-- **Frontend:** Vanilla JS + HTML5 + TailwindCSS (Served via Go)
-- **AI Integration:** Groq API (Llama 3.1 8B Instant)
-- **Security:** JWT (JSON Web Tokens) & Bcrypt for password hashing
-- **Concurrency:** Go Routines (Background Price Simulator)
-
-## Architecture Design 
-This project strictly follows **Hexagonal Architecture** to decouple the business logic from external frameworks:
-- `cmd/api`: Application entry point and server configuration.
-- `internal/core/domain`: Core business models (`Car`, `User`).
-- `internal/core/ports`: Input/Output interfaces.
-- `internal/core/services`: Business logic, Auth, and AI prompt engineering.
-- `internal/adapters`: External implementations (HTTP Handlers, Groq Client, PostgreSQL Repositories, Background Simulator).
-
-## How to run locally
-1. Clone the repository: `git clone https://github.com/isw2-unileon/project-VehiclesRecomendationWeb.git`
-2. Run the backend: `go run cmd/api/main.go`
-
-
-## How to Run Locally
-
-### Prerequisites
-- Go 1.24+ installed
-- Docker & Docker Compose installed
-- A free API Key from [Groq Cloud](https://console.groq.com/)
-
-### Commands
-1. **Clone the repository:**
-   `git clone https://github.com/isw2-unileon/project-VehiclesRecomendationWeb.git`
-2. **Download dependencies:**
-   `go mod tidy`
-3. **Compile the project:**
-   `go build -v ./...`
-4. **Run the server:**
-   `go run cmd/api/main.go`
-
-   http://localhost:8080/api/health
-
-## Database Seeder (CSV to SQL)
-This project includes a custom Go script to automate the database seeding process. The script reads the raw data from our `resources/Cars Datasets 2025.csv` file, processes the columns, and generates ready-to-use SQL `INSERT` statements.
-
-### Features
-* **Data Cleaning:** Automatically removes unnecessary text characters, currency symbols (`$`), and units (`cc`, `hp`, `km/h`) from numeric fields.
-* **Range Parsing:** Detects numerical ranges (e.g., `150-200`) and dynamically generates a random integer within that range to ensure valid SQL numeric types.
-* **SQL Injection Prevention:** Escapes single quotes in text fields to prevent syntax errors during insertion.
-
-**Usage:**
-`go run cmd/seeder/mainCSV.go > coches_seeder.sql`
-
-## 📌 Roadmap & Next Steps
-
-- **Authentication:** Upgrade the current login system to integrate third-party secure authentication services (e.g., OAuth, Auth0) as per project requirements.
-- **Real-time Market Simulation:** Maintain and expand the background API simulator that automatically updates vehicle data and prices periodically using Go Routines.
-- **Version Control & CI/CD:** Review pending code changes and accept the open Pull Requests into the main branch to proceed with the frontend integration.
+ 
+A full-stack web application with a smart vehicle recommendation engine powered by Artificial Intelligence (Groq Llama 3.1), an advanced manual search engine, full-text search, and a user favorites system with JWT-based authentication.
+ 
+**Live:** [https://project-vehiclesrecomendationweb.onrender.com]
+ 
+---
+ 
+## Description
+ 
+Vehicles Recommendation Web allows users to register, log in, and search for vehicles from a real dataset of 2025 cars. Users can get AI-powered recommendations by describing their needs in natural language, search the database by brand, fuel type, price and seats, perform full-text model searches, and save vehicles to a personal favorites list. For every car, users can view photos, details, and save it to their favorites. 
+ 
+---
+ 
+## Prerequisites
+ 
+- [Go 1.24+](https://golang.org/dl/)
+- [Docker & Docker Compose](https://docs.docker.com/get-docker/)
+- A free API key from [Groq Cloud](https://console.groq.com/)
+---
+ 
+## Setup and Run Locally
+ 
+### 1. Clone the repository
+ 
+```bash
+git clone https://github.com/isw2-unileon/project-VehiclesRecomendationWeb.git
+cd project-VehiclesRecomendationWeb
+```
+ 
+### 2. Configure environment variables
+ 
+Create a `.env` file in the project root. This file is ignored by Git for security.
+ 
+```env
+GROQ_API_KEY=gsk_your_key_here
+JWT_SECRET=your_secret_key_here
+```
+ 
+### 3. Download Go dependencies
+ 
+```bash
+go mod tidy
+```
+ 
+### 4. Start the database
+ 
+```bash
+docker compose up -d
+```
+ 
+### 5. Load schema and seed data
+ 
+```bash
+# Create the database tables
+docker exec -i vehicles_db psql -U postgres -d cars < resources/schema.sql
+ 
+# Convert encoding and seed the database with car data
+iconv -f UTF-16 -t UTF-8 cars_seeder.sql > cars_seeder_utf8.sql
+docker exec -i vehicles_db psql -U postgres -d cars < cars_seeder_utf8.sql
+```
+ 
+### 6. Run the server
+ 
+```bash
+go run cmd/api/main.go
+```
+ 
+The application will be available at [http://localhost:8080](http://localhost:8080).  
+Health check: [http://localhost:8080/api/health](http://localhost:8080/api/health)
+ 
+---
+ 
+## Daily Development
+ 
+```bash
+# Start the database (if not running)
+docker compose up -d
+ 
+# Run the server
+go run cmd/api/main.go
+ 
+# Stop the server
+Ctrl+C
+ 
+# Stop the database (data is preserved)
+docker compose stop
+```
+ 
+---
+ 
+## Running Tests
+ 
+```bash
+# Run all tests
+go test ./...
+ 
+# Run tests with coverage
+go test -cover ./...
+ 
+# Run tests for a specific package
+go test ./internal/core/services/...
+go test ./internal/adapters/handlers/...
+```
+ 
+---
+ 
+## How to Contribute
+ 
+This project follows **Trunk Based Development (TBD)**. Each task is developed in a short-lived branch created from `main`, integrated via Pull Request, and deleted after merging. The `main` branch always contains the latest stable and deployed version.
+ 
+### Branch naming
+ 
+```
+feature/short-description
+fix/short-description
+refactor/short-description
+docs/short-description
+test/short-description
+```
+ 
+### Commit convention
+ 
+```
+feat: add new feature
+fix: correct a bug
+refactor: improve code structure
+test: add or update tests
+docs: update documentation
+chore: maintenance tasks
+```
+ 
+### Pull Request process
+ 
+1. Create a short-lived branch from `main`:
+   ```bash
+   git checkout -b feature/your-feature
+   ```
+2. Make changes and commit following the convention above.
+3. Push and open a Pull Request to `main`.
+4. Request a review from a team member.
+5. Once approved and CI passes, merge the PR and delete the branch immediately:
+   ```bash
+   git checkout main
+   git pull origin main
+   git branch -d feature/your-feature
+   git push origin --delete feature/your-feature
+   ```
+ 
+---
+ 
+## Technical Documentation
+ 
+Full technical documentation (architecture, data models, design decisions, API reference) is available in [`/docs`](./docs).
