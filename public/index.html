@@ -247,9 +247,8 @@
                             <select v-model="searchFuel"
                                 class="w-full p-2 rounded border border-gray-300 focus:outline-none focus:border-blue-500 text-xs">
                                 <option value="">-- All --</option>
-                                <option value="Gasoline">Gasoline</option>
+                                <option value="Petrol">Petrol</option>
                                 <option value="Diesel">Diesel</option>
-                                <option value="Electric">Electric</option>
                                 <option value="Hybrid">Hybrid</option>
                             </select>
                         </div>
@@ -296,6 +295,8 @@
                                             <div class="flex gap-1">
                                                 <a :href="imageLink(car)" target="_blank"
                                                     class="bg-gray-200 hover:bg-gray-300 py-1 px-1.5 rounded">Photo</a>
+                                                <button @click="showCarDetails(car)"
+                                                    class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-1 px-1.5 rounded">Details</button>
                                                 <button @click="addFavorite(car.id)"
                                                     class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold py-1 px-1.5 rounded">Save</button>
                                             </div>
@@ -347,6 +348,8 @@
                                     <div class="flex gap-1">
                                         <a :href="imageLink(car)" target="_blank"
                                             class="bg-gray-200 hover:bg-gray-300 py-1 px-1.5 rounded">Photo</a>
+                                        <button @click="showCarDetails(car)"
+                                            class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold py-1 px-1.5 rounded">Details</button>
                                         <button @click="addFavorite(car.id)"
                                             class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold py-1 px-1.5 rounded">Save</button>
                                     </div>
@@ -355,6 +358,23 @@
                             </div>
                         </div>
                     </template>
+                </div>
+
+                <div v-if="selectedCar" class="bg-blue-50 p-4 rounded border-2 border-blue-500 shadow-lg mt-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-base font-bold text-blue-900"> Full vehicle details</h3>
+                        <button @click="selectedCar = null"
+                            class="text-xs bg-blue-200 hover:bg-blue-300 px-3 py-1 rounded font-semibold">Close</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                        <template v-for="(value, key) in selectedCar" :key="key">
+                            <div v-if="key.toLowerCase() !== 'id'"
+                                class="bg-white border border-blue-200 rounded p-2 hover:border-blue-400 transition">
+                                <span class="font-semibold text-blue-700">{{ formatLabel(key) }}:</span>
+                                <span class="block mt-1 text-gray-800">{{ displayValue(value) }}</span>
+                            </div>
+                        </template>
+                    </div>
                 </div>
             </div>
         </main>
@@ -382,6 +402,8 @@
                         <div class="flex flex-col items-end gap-2">
                             <a :href="imageLink(car)" target="_blank"
                                 class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-1 px-2 rounded">Photo</a>
+                            <button @click="showCarDetails(car)"
+                                class="bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs font-bold py-1 px-2 rounded">Details</button>
                             <button @click="removeFavorite(car.id)"
                                 class="bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold py-1 px-2 rounded">Remove</button>
                         </div>
@@ -400,8 +422,8 @@
             data() {
                 return {
                     // Auth state
-                    token: localStorage.getItem('token') || '',
-                    currentUsername: localStorage.getItem('username') || '',
+                    token: '',
+                    currentUsername: '',
                     authMode: 'login', // 'login' | 'register'
 
                     // Login form
@@ -436,6 +458,7 @@
                     // Favorites
                     favoritesOpen: false,
                     favorites: [],
+                    selectedCar: null,
                 };
             },
 
@@ -467,11 +490,43 @@
                     const p = car.price || car.Price;
                     return p ? '€' + Number(p).toLocaleString() : 'Price upon request';
                 },
+                showCarDetails(car) {
+                    this.selectedCar = car;
+                },
+                formatLabel(key) {
+                    return key
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, (char) => char.toUpperCase());
+                },
+                displayValue(value) {
+                    if (value === null || value === undefined || value === '') {
+                        return '-';
+                    }
+                    if (Array.isArray(value)) {
+                        return value.join(', ');
+                    }
+                    return String(value);
+                },
+                validateEmail(email) {
+                    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    return emailPattern.test(email);
+                },
+                validatePassword(password) {
+                    const minLength = 8;
+                    const hasUpper = /[A-Z]/.test(password);
+                    const hasLower = /[a-z]/.test(password);
+                    const hasDigit = /[0-9]/.test(password);
+                    const hasSpecial = /[!@#$%^&*(),.?"':{}|<>]/.test(password);
+                    return password.length >= minLength && hasUpper && hasLower && hasDigit && hasSpecial;
+                },
 
                 // ── Auth ─────────────────────────────────────────────────
                 async login() {
                     if (!this.logEmail || !this.logPassword) {
                         return alert('Please enter email and password.');
+                    }
+                    if (!this.validateEmail(this.logEmail)) {
+                        return alert('Please enter a valid email address.');
                     }
                     try {
                         const res = await fetch('/api/auth/login', {
@@ -498,6 +553,12 @@
                     if (!this.regUsername || !this.regEmail || !this.regPassword) {
                         return alert('Please fill in all fields.');
                     }
+                    if (!this.validateEmail(this.regEmail)) {
+                        return alert('Please enter a valid email address.');
+                    }
+                    if (!this.validatePassword(this.regPassword)) {
+                        return alert('Password must be at least 8 characters long and include uppercase, lowercase, a number, and a special character.');
+                    }
                     try {
                         const res = await fetch('/api/auth/register', {
                             method: 'POST',
@@ -510,7 +571,6 @@
                         });
                         if (res.ok) {
                             alert('Account registered! Please log in.');
-                            this.logEmail = this.regEmail;
                             this.authMode = 'login';
                         } else {
                             alert('Registration failed. Email or username might already exist.');
@@ -525,7 +585,13 @@
                     this.currentUsername = '';
                     localStorage.removeItem('token');
                     localStorage.removeItem('username');
-                    // Reset UI state
+                    // Reset auth state and UI state
+                    this.authMode = 'login';
+                    this.logEmail = '';
+                    this.logPassword = '';
+                    this.regUsername = '';
+                    this.regEmail = '';
+                    this.regPassword = '';
                     this.searchResults = [];
                     this.searchDone = false;
                     this.textSearchResults = [];
@@ -534,6 +600,7 @@
                     this.aiLoading = false;
                     this.favoritesOpen = false;
                     this.searchBrand = '';
+                    this.selectedCar = null;
                     this.searchFuel = '';
                     this.searchPrice = '';
                     this.searchSeats = '';
@@ -596,6 +663,7 @@
 
                 // ── Search ────────────────────────────────────────────────
                 async manualSearch() {
+                    this.selectedCar = null;
                     this.searchLoading = true;
                     this.searchDone = false;
                     this.searchResults = [];
@@ -645,6 +713,7 @@
 
                 async textSearch() {
                     if (!this.textSearchInput) return alert('Please paste or type a car model first.');
+                    this.selectedCar = null;
                     this.textSearchLoading = true;
                     this.textSearchDone = false;
                     this.textSearchResults = [];
